@@ -251,7 +251,7 @@ FEEDBACK_PROMPT = PromptTemplate(input_variables=["previous_answer"], template=F
 # Initialize OpenAI models and agents
 def initialize_smart_datalake(dataframes, prompt_template):
     llm = ChatOpenAI(
-        temperature=0, model="gpt-3.5-turbo", openai_api_key="sk-proj-KHzaTujZGduAhDVL2GyfT3BlbkFJeLWhvD8web0AbEnkxcJc"
+        temperature=0, model="gpt-3.5-turbo", openai_api_key="sk-proj-xzsekO7x4LXIAxalfR7FT3BlbkFJhuJBFt13hpTImg3BIGLk"
     )
     pandas_df_agent = create_pandas_dataframe_agent(
         llm,
@@ -267,7 +267,7 @@ def initialize_smart_datalake(dataframes, prompt_template):
 
 def initialize_feedback(dataframes, feedback_prompt):
     llm = ChatOpenAI(
-        temperature=0, model="gpt-3.5-turbo", openai_api_key="sk-proj-KHzaTujZGduAhDVL2GyfT3BlbkFJeLWhvD8web0AbEnkxcJc"
+        temperature=0, model="gpt-3.5-turbo", openai_api_key="sk-proj-xzsekO7x4LXIAxalfR7FT3BlbkFJhuJBFt13hpTImg3BIGLk"
     )
     feedback_agent = create_pandas_dataframe_agent(
         llm,
@@ -283,7 +283,7 @@ def initialize_feedback(dataframes, feedback_prompt):
 
 # Function to initialize OpenAI for generating suggestions
 def initialize_suggestion(dataframes):
-    llm = OpenAI(model_name="gpt-3.5-turbo-instruct", n=2, best_of=2, openai_api_key="sk-proj-KHzaTujZGduAhDVL2GyfT3BlbkFJeLWhvD8web0AbEnkxcJc")
+    llm = OpenAI(model_name="gpt-3.5-turbo-instruct", n=2, best_of=2, openai_api_key="sk-proj-xzsekO7x4LXIAxalfR7FT3BlbkFJhuJBFt13hpTImg3BIGLk")
     return llm
 
 # Function to save generated plots
@@ -334,57 +334,87 @@ def load_files():
                 files.extend(os.listdir(path))
             elif os.path.isfile(path):
                 files.append(os.path.basename(path))
-        return jsonify(success=True, files=files)
+        return jsonify({"status":"Success", "message":files}) ,200
     else:
-        return jsonify(success=False)
+        return jsonify({"status":"Failure", "error":"Files doesnot load"})
 
 def upload_files():
-    if 'user_id' not in session:
-        return jsonify(success=False, message="User not authenticated."), 401
 
-    if 'files' not in request.files:
-        return jsonify(success=False, message="No files part in the request.")
-    
-    files = request.files.getlist('files')
-    user_upload_folder = get_user_upload_folder()
-    session['file_or_folder_paths'] = []
-    
-    for file in files:
-        if file and (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):    
-            file_path = os.path.join(user_upload_folder, file.filename)
-            try:
-                file.save(file_path)
-                session['file_or_folder_paths'].append(file_path)
-                # Log the uploaded file activity
-                log_activities(
-                    user_id=session.get('user_id'),
-                    email=session.get('user_email', 'unknown'),
-                    activity_type="File Upload",
-                    activity_content=f"Uploaded file: {file.filename}",
-                    response_content=None,
-                    error_message=None,
-                    app_name="csv"
-                )
-            except Exception as e:
-                logger.error(f"Error saving file '{file_path}': {str(e)}")
-    
-    logger.info(f"Uploaded files: {[os.path.basename(path) for path in session['file_or_folder_paths']]}")
-    return jsonify(success=True, files=[os.path.basename(path) for path in session['file_or_folder_paths']])
+    user_email = None
+    try:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return jsonify({"status": "Failure","error": "Authorization header is missing."}), 401
+
+        # Extract the token from the header
+        token = auth_header.split(" ")[1]
+          # Decode the JWT token
+        try:
+            decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+        except jwt.ExpiredSignatureError:
+            return jsonify({"status": "Failure","error": "Token has expired."}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"status": "Failure","error": "Invalid token."}), 401
+          # Extract user email from the decoded token
+        user_email = decoded_token.get('email')
+        if not user_email:
+            return jsonify({"status": "Failure","error": "User email not found in token."}), 401
+
+        # Fetch user data from the database
+        user_data = UserInfo.query.filter_by(Email=user_email).first()
+        if not user_data:
+            return jsonify({"status": "Failure","error": "User data not found."}), 404
+
+
+
+        
+        files = request.files.getlist('files')
+        user_upload_folder = get_user_upload_folder()
+        session['file_or_folder_paths'] = []
+
+        if 'files' not in request.files:
+            return jsonify({"status":"Failure", "message":"No files part in the request."})
+        
+        for file in files:
+            if file and (file.filename.endswith('.csv') or file.filename.endswith('.xlsx')):    
+                file_path = os.path.join(user_upload_folder, file.filename)
+                try:
+                    file.save(file_path)
+                    session['file_or_folder_paths'].append(file_path)
+                    # Log the uploaded file activity
+                    log_activities(
+                        user_id=session.get('user_id'),
+                        email=session.get('user_email', 'unknown'),
+                        activity_type="File Upload",
+                        activity_content=f"Uploaded file: {file.filename}",
+                        response_content=None,
+                        error_message=None,
+                        app_name="csv"
+                    )
+                except Exception as e:
+                    logger.error(f"Error saving file '{file_path}': {str(e)}")
+        
+        logger.info(f"Uploaded files: {[os.path.basename(path) for path in session['file_or_folder_paths']]}")
+        return jsonify({"status":"Success", "files":[os.path.basename(path) for path in session['file_or_folder_paths']]})
+    except Exception as e:
+        print(f"Error in chat route: {e}")
+        log_activities(user_id=None,email=user_email, activity_type='error',app_name='csv', error_message=str(e))  # Log error
+        return jsonify({"status": "Failure","error": "An error occurred while processing your request."}), 500
 
 def ask_questions():
     user_email = None  # Initialize user_email for error logging
     try:
         if request.content_type != 'application/json':
-            return jsonify(success=False, message="Content-Type must be application/json"), 415
+            return jsonify({"status":"Failure", "message":"Content-Type must be application/json"}), 415
 
         data = request.get_json()
         query = data.get('question', '')
 
         if not query:
-            return jsonify(success=False, message="No question provided."), 400
+            return jsonify({"status":"Failure", "message":"No question provided."}), 400
 
         if 'file_or_folder_paths' not in session:
-            return jsonify(success=False, message="Please upload files or folders first."), 400
+            return jsonify({"status":"Failure", "message":"Please upload files or folders first."}), 400
 
         # Log the user's question
         logger.info(f"User question: {query}")
@@ -401,16 +431,16 @@ def ask_questions():
                 logger.info(f"Decoded token: {decoded_token}")
             except jwt.ExpiredSignatureError:
                 logger.error("Token expired")
-                return jsonify(success=False, message="Token expired"), 401
+                return jsonify({"status": "Failure","error": "Token has expired."}), 401
             except jwt.InvalidTokenError:
                 logger.error("Invalid token")
-                return jsonify(success=False, message="Invalid token"), 401
+                return jsonify({"status": "Failure","error": "Invalid token."}), 401
 
         # Load data and initialize smart data lake
         dataframes_list = load_data(session['file_or_folder_paths'])
         if not dataframes_list:
             logger.error("No data loaded from the provided paths")
-            return jsonify(success=False, message="Failed to load data from provided files or folders."), 500
+            return jsonify({"status":"Failure", "message":"Failed to load data from provided files or folders."}), 500
 
         smart_df = initialize_smart_datalake(dataframes_list, PROMPT_TEMPLATE)
         logger.info("Smart data lake initialized")
@@ -421,7 +451,7 @@ def ask_questions():
 
         if not answer:
             logger.error("No answer generated by the AI agent")
-            return jsonify(success=False, message="Failed to generate an answer."), 500
+            return jsonify({"status":"Failure", "message":"Failed to generate an answer."}), 500
 
         # Log user activity in the database
         user_data = UserInfo.query.filter_by(Email=user_email).first()
@@ -440,11 +470,11 @@ def ask_questions():
             )
 
         # Prepare the response
-        response = {"success": True, "answer": answer}
+        response = { "answer": answer}
         if plot_path:
             response["plot_url"] = f"/temp_plots/{os.path.basename(plot_path)}"
 
-        return jsonify(response)
+        return jsonify({"status":"Success","message":response}),200
 
     except Exception as e:
         logger.error(f"Error in ask_question route: {e}", exc_info=True)
@@ -457,7 +487,7 @@ def ask_questions():
             response_content='Error occurred',
             error_message=str(e)
         )  # Log error
-        return jsonify(success=False, message="An error occurred while processing")
+        return jsonify({"status":"Failure", "message":"An error occurred while processing"}),400
 
 
 # Route to handle feedback on answers
@@ -476,7 +506,7 @@ def feedback():
  
     if query and feedback_type == 'dislike':
         if chosen_option not in options:
-            return jsonify(success=False, message="Invalid option selected."), 400
+            return jsonify({"status":"Failure", "message":"Invalid option selected."}), 400
  
         feedback_message = options[chosen_option]
  
@@ -494,12 +524,12 @@ def feedback():
         logger.info(f"User feedback (dislike) for question: {query}")
         logger.info(f"Feedback message: {feedback_message}")
  
-        return jsonify(success=True, message="Feedback recorded", chosen_option=feedback_message)
+        return jsonify({"status":"Success", "message":"Feedback recorded", "chosen_option":feedback_message})
     elif feedback_type == 'like':
         logger.info(f"User feedback (like) for question: {query}")
-        return jsonify(success=True, answer="Thank you for your feedback!")
+        return jsonify({"status":"Success", "message":"Thank you for your feedback!"})
     else:
-        return jsonify(success=False, message="Invalid feedback request.")
+        return jsonify({"status":"Failure", "message":"Invalid feedback request."})
  
 
 
@@ -538,10 +568,10 @@ def smart_suggestion():
                     logger.info(f"Decoded token: {decoded_token}")
                 except jwt.ExpiredSignatureError:
                     logger.error("Token expired")
-                    return jsonify(success=False, message="Token expired"), 401
+                    return jsonify({"status":"Failure", "message":"Token expired"}), 401
                 except jwt.InvalidTokenError:
                     logger.error("Invalid token")
-                    return jsonify(success=False, message="Invalid token"), 401
+                    return jsonify({"status":"Failure", "message":"Invalid token"}), 401
 
             # Log user activity in the database
             user_data = UserInfo.query.filter_by(Email=user_email).first()
@@ -559,7 +589,7 @@ def smart_suggestion():
                     prompt_tokens=prompt_tokens
                 )
 
-            return jsonify(success=True, suggestions=result.split('\n'))
+            return jsonify({"status":"Success", "message":result.split('\n')})
         except Exception as e:
             logger.error(f"Error generating suggestions: {str(e)}")  # Log any errors that occur
             log_activities(
@@ -569,7 +599,7 @@ def smart_suggestion():
                 app_name='csv',
                 error_message=str(e)
             )  # Log error
-            return jsonify(success=False, message="Error generating suggestions"), 500
+            return jsonify({"status":"Failure", "message":"Error generating suggestions"}), 500
 
     except Exception as e:
         logger.error(f"Error in smart_suggestion route: {str(e)}")
@@ -580,7 +610,7 @@ def smart_suggestion():
             app_name='csv',
             error_message=str(e)
         )  # Log error
-        return jsonify(success=False, message="An error occurred while processing your request."), 500
+        return jsonify({"status":"Failure", "message":"An error occurred while processing your request."}), 500
 
 
 # Placeholder route to refer session state
@@ -599,13 +629,13 @@ def serve_plot(filename):
 @app.errorhandler(404)
 def page_not_found(e):
     logger.error(f"Page not found: {request.url}")
-    return jsonify(error="Page not found"), 404
+    return jsonify({"status":"Success", "message":"Page not found"}), 404
 
 # Error handling for 500 internal server errors
 @app.errorhandler(500)
 def internal_server_error(e):
     logger.error(f"Internal server error: {str(e)}")
-    return jsonify(error="Internal server error"), 500
+    return jsonify({"status":"Failure", "message":"Internal server error"}), 500
     
 
 # Start Flask application
