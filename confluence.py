@@ -16,7 +16,7 @@ from flask_cors import CORS
 import jwt
 from userdb import db,UserInfo,UserActivities,generate_token,log_activities,signin,register,forgot_password
 
-
+load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
@@ -33,22 +33,6 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-# @app.route('/user/signin', methods=['POST'])
-# def user_signin():
-#     data = request.json
-#     return jsonify(*signin(data, app.config['SECRET_KEY']))
-
-# @app.route('/user/register', methods=['POST'])
-# def user_register():
-#     data = request.json
-#     return jsonify(*register(data))
-
-# @app.route('/user/forgot', methods=['POST'])
-# def user_forgot_password():
-#     data = request.json
-#     return jsonify(*forgot_password(data))
-
-# @app.route('/user/auth', methods=['GET'])
 def auth():
     auth_header = request.headers.get('Authorization')
     
@@ -297,72 +281,6 @@ def handle_query(query):
 
     return response
 
-def feedback_endpoint(response_id,feedback):
-
-    if response_id in response_store:
-        if feedback == 'thumbsup':
-            response_store[response_id]['thumbs_up'] += 1
-            review = "Thank you for your positive feedback! We're glad you found the information helpful."
-            
-            # Calculate tokens
-            COST_PER_1000_TOKENS = 0.002 
-
-            enc = tiktoken.get_encoding("cl100k_base")
-            global prompt_Tokens1,question_tokens1,response_tokens1,total_tokens1,total_Cost1
-
-            prompt_Tokens1 = len(enc.encode(answer_prompt))
-            question_tokens1 = len(enc.encode(response_id))
-            response_tokens1 = len(enc.encode(review))
-
-            total_tokens1 = prompt_Tokens1 + question_tokens1 + response_tokens1
-            total_Cost1 = (total_tokens1 / 1000) * COST_PER_1000_TOKENS
-            return review
-            # return jsonify({"status": "success", "review": review}), 200
-
-        elif feedback == 'thumbsdown':
-            response_store[response_id]['thumbs_down'] += 1  # Increment thumbs down count
-
-            # ans = ["Sorry I Didn't understand the Question","We're sorry that the information didn't meet your expectations","Plase ask Another Question","There is no revelant answer for you asked"]
-        
-            answer = random.choice([
-                "Sorry I Didn't understand the Question",
-                "We're sorry that the information didn't meet your expectations",
-                "Please ask Another Question",
-                "There is no relevant answer for you asked"
-            ])
-
-            # review = "We're sorry that the information didn't meet your expectations. Here's a new response based on your feedback:"
-
-            # Calculate tokens
-            COST_PER_1000_TOKENS = 0.002 
-
-            enc = tiktoken.get_encoding("cl100k_base")
-
-            prompt_Tokens1 = len(enc.encode(answer_prompt))
-            question_tokens1 = len(enc.encode(response_id))
-            response_tokens1 = len(enc.encode(answer))
-
-            total_tokens1 = prompt_Tokens1 + question_tokens1 + response_tokens1
-            total_Cost1 = (total_tokens1 / 1000) * COST_PER_1000_TOKENS
-
-            return answer
-            # review = "We're sorry that the information didn't meet your expectations. Here's a new response based on your feedback:"
-            
-            # # Generate a new response for negative feedback using the negative prompt
-            # new_response = qa_chain_negative.run({"query": response_id})
-            
-            # # Update the response in response_store with the new response
-            # response_store[response_id]['response'] = new_response
-            # return new_response
-
-            # return jsonify({"status": "success", "review": review, "new_response": new_response}), 200
-        else:
-            return "invalid feedback"
-            # return jsonify({"error": "Invalid feedback"}), 400
-
-    # return jsonify({"error": "Response ID not found"}), 404
-    return "error response id not found "
-
 def generate_questions():
     # Generate suggestions based on Confluence content
     # loader = ConfluenceLoader(url=confluence_link, username=user_name, api_key=api_key)
@@ -404,7 +322,7 @@ def chat1():
     try:
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return jsonify({"error": "Authorization header is missing."}), 401
+            return jsonify({"status": "Failure","error": "Authorization header is missing."}), 401
 
         # Extract the token from the header
         token = auth_header.split(" ")[1]
@@ -412,18 +330,18 @@ def chat1():
         try:
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired."}), 401
+            return jsonify({"status": "Failure","error": "Token has expired."}), 401
         except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token."}), 401
+            return jsonify({"status": "Failure","error": "Invalid token."}), 401
           # Extract user email from the decoded token
         user_email = decoded_token.get('email')
         if not user_email:
-            return jsonify({"error": "User email not found in token."}), 401
+            return jsonify({"status": "Failure","error": "User email not found in token."}), 401
 
         # Fetch user data from the database
         user_data = UserInfo.query.filter_by(Email=user_email).first()
         if not user_data:
-            return jsonify({"error": "User data not found."}), 404
+            return jsonify({"status": "Failure","error": "User data not found."}), 404
 
         # Get data from POST request
         
@@ -436,89 +354,43 @@ def chat1():
         # Log user activity including user input
         log_activities(user_data.Pid, user_email,app_name='confluence', activity_type='question', activity_content=input, response_content=response_Content,total_cost=total_Cost,successful_requests=1,completion_tokens=total_tokens,prompt_tokens=prompt_Tokens)
 
-        return jsonify({"response": response_Content, "id": response_id})
+        return jsonify({"status": "Success", "response": response_Content, "id": response_id})
 
     except Exception as e:
         print(f"Error in chat route: {e}")
         log_activities(user_id=None,email=user_email, activity_type='error',app_name='confluence', error_message=str(e))  # Log error
-        return jsonify({"error": "An error occurred while processing your request."}), 500
-
-
-def feedback1():
-    try:
-        auth_header = request.headers.get('Authorization')
-        if not auth_header:
-            return jsonify({"error": "Authorization header is missing."}), 401
-
-        # Extract the token from the header
-        token = auth_header.split(" ")[1]
-          # Decode the JWT token
-        try:
-            decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired."}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token."}), 401
-          # Extract user email from the decoded token
-        user_email = decoded_token.get('email')
-        if not user_email:
-            return jsonify({"error": "User email not found in token."}), 401
-
-        # Fetch user data from the database
-        user_data = UserInfo.query.filter_by(Email=user_email).first()
-        if not user_data:
-            return jsonify({"error": "User data not found."}), 404
-
-        # Get data from POST request
-        
-        feedback_data = request.get_json()
-        feedback = feedback_data.get('feedback')
-        response_id = feedback_data.get('responseId')
-
-        response_Content = feedback_endpoint(response_id,feedback)
-        response_Id = hash(response_id)
-
-        # Log user activity including user input
-        log_activities(user_data.Pid, user_email,app_name='confluence', activity_type='feedback', activity_content=feedback, response_content=response_Content,total_cost=total_Cost1,successful_requests=1,completion_tokens=total_tokens1,prompt_tokens=prompt_Tokens1)
-
-        return jsonify({"response": response_Content, "id": response_Id})
-
-    except Exception as e:
-        print(f"Error in chat route: {e}")
-        log_activities(user_id=None,email=user_email, activity_type='error',app_name='confluence', error_message=str(e))  # Log error
-        return jsonify({"error": "An error occurred while processing your request."}), 500
-    
+        return jsonify({"status": "Failure","error": "An error occurred while processing your request."}), 500
 
 def suggestion():
     user_email = None  # Initialize user_email to handle possible exceptions
     try:
         auth_header = request.headers.get('Authorization')
         if not auth_header:
-            return jsonify({"error": "Authorization header is missing."}), 401
+            return jsonify({"status": "Failure","error": "Authorization header is missing."}), 401
 
         # Extract the token from the header
         try:
             token = auth_header.split(" ")[1]
         except IndexError:
-            return jsonify({"error": "Token is missing."}), 401
+            return jsonify({"status": "Failure","error": "Token is missing."}), 401
 
         # Decode the JWT token
         try:
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token has expired."}), 401
+            return jsonify({"status": "Failure","error": "Token has expired."}), 401
         except jwt.InvalidTokenError:
-            return jsonify({"error": "Invalid token."}), 401
+            return jsonify({"status": "Failure","error": "Invalid token."}), 401
 
         # Extract user email from the decoded token
         user_email = decoded_token.get('email')
         if not user_email:
-            return jsonify({"error": "User email not found in token."}), 401
+            return jsonify({"status": "Failure","error": "User email not found in token."}), 401
 
         # Fetch user data from the database
         user_data = UserInfo.query.filter_by(Email=user_email).first()
         if not user_data:
-            return jsonify({"error": "User data not found."}), 404
+            return jsonify({"status": "Failure","error": "User data not found."}), 404
 
         # Calling function to suggest question
         question = generate_questions()
@@ -528,7 +400,7 @@ def suggestion():
         log_activities(user_data.Pid, user_email,app_name='confluence', activity_type='suggestion', activity_content="Generated the Questions from the Confluence Page", response_content=question,total_cost=total_Cost2,successful_requests=1,completion_tokens=total_tokens2,prompt_tokens=prompt_Tokens2)
 
         
-        return jsonify({"suggestions": question}), 200
+        return jsonify({"status": "Success", "suggestions": question}), 200
     except Exception as e:
         print(f"Error in suggestion route: {e}")
         log_activities(
@@ -538,7 +410,7 @@ def suggestion():
             app_name='confluence',
             error_message=str(e)
         )  # Log error
-        return jsonify({"error": "An error occurred while processing your request."}), 500
+        return jsonify({"status": "Failure","error": "An error occurred while processing your request."}), 500
 
 
     
