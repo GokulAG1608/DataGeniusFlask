@@ -10,6 +10,7 @@ from my_csv import *
 #call the sql file
 from my_sql import *
 
+from feedback import *
 
 app = Flask(__name__)
 CORS(app)
@@ -96,15 +97,21 @@ def auth():
         )
         return jsonify({"status": "Failure", "message": "Token is missing"}), 401
 
+#! FEEDBACK
+
+@app.route('/feedback', methods=['POST'])
+def feedback1():
+    return feedback()
+
 #! CONFLUENCES
 
 @app.route('/chat1', methods=['POST'])
 def cf_chat():
     return chat1()
 
-@app.route('/feedback', methods=['POST'])
-def cf_feedback():
-    return feedback1()
+# @app.route('/feedback', methods=['POST'])
+# def cf_feedback():
+#     return feedback1()
 
 @app.route('/suggestion', methods=['POST'])
 def cf_question():
@@ -125,13 +132,13 @@ def p_ask_questions():
 def p_generate_questions():
     return generate_top_questions_route()
 
-@app.route("/dislike_feedback", methods=["POST"])
-def p_feedback():
-    return dislike_feedback()
+# @app.route("/dislike_feedback", methods=["POST"])
+# def p_feedback():
+#     return dislike_feedback()
 
-@app.route("/like_feedback", methods=["POST"])
-def p_feedback1():
-    return submit_feedback()
+# @app.route("/like_feedback", methods=["POST"])
+# def p_feedback1():
+#     return submit_feedback()
 
 @app.route("/chat_history", methods=["GET"])
 def p_history():
@@ -152,9 +159,9 @@ def c_uploadfiiles():
 def c_question():
     return ask_questions()
 
-@app.route('/feedback1', methods=['POST'])
-def c_feedback():
-    return feedback()
+# @app.route('/feedback1', methods=['POST'])
+# def c_feedback():
+#     return feedback3()
 
 @app.route('/smart_suggestion', methods=['POST'])
 def c_suggestion():
@@ -175,13 +182,13 @@ def s_chat():
 def s_question():
     return get_random_questions_route()
 
-@app.route("/dislike_feedback_sql", methods=["POST"])
-def s_feedback():
-    return dislike_feedback1()
+# @app.route("/dislike_feedback_sql", methods=["POST"])
+# def s_feedback():
+#     return dislike_feedback1()
 
-@app.route("/like_feedback_sql", methods=["POST"])
-def s_feedback1():
-    return submit_feedback1()
+# @app.route("/like_feedback_sql", methods=["POST"])
+# def s_feedback1():
+#     return submit_feedback1()
 
 
 
