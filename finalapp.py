@@ -15,7 +15,6 @@ from feedback import *
 app = Flask(__name__)
 CORS(app)
 
-
 # Configuration for SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/user_credentials'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -189,9 +188,6 @@ def s_question():
 # @app.route("/like_feedback_sql", methods=["POST"])
 # def s_feedback1():
 #     return submit_feedback1()
-
-
-
 
 if __name__ == '__main__':
     app.run(debug=True,host='0.0.0.0',port=3796)
