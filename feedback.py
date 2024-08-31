@@ -5,12 +5,10 @@ from flask import Flask,request,jsonify
 from flask_cors import CORS
 from userdb import *
 
-
 app = Flask(__name__)
 CORS(app)
 
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
-
    
 def feedback():
     try:
