@@ -363,12 +363,7 @@ def get_random_questions_route():
             error_message=str(e)
         )
         return jsonify({"error": "An error occurred while generating random questions: " + str(e)}), 500
-
-
-
-
-    
-    
+  
 # Ensure chat_history is defined somewhere globally or in session context
 chat_history = []  # This should be maintained with user interactgghnbctf hjtions elsewhere in your code
 
