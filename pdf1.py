@@ -303,8 +303,6 @@ def generateNewAnswer():
         logger.error(f"Error generating new answer: {str(e)}")
         return f"Error generating new answer: {str(e)}"
 
-
-
 def upload():
     try:
         auth_header = request.headers.get('Authorization')
@@ -390,8 +388,6 @@ def upload():
             error_message=str(e)
         )
         return jsonify({"error": "An error occurred while processing your request."}), 500
-
-
 
 def ask_question():
     try:
