@@ -20,7 +20,6 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-
 # Configuration for SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/user_credentials'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
