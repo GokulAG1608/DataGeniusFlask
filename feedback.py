@@ -34,7 +34,7 @@ def feedback():
         user_data = UserInfo.query.filter_by(Email=user_email).first()
         if not user_data:
             return jsonify({"status": "Failure","error": "User data not found."}), 404
-
+           
         data = request.get_json()
         query = data.get('question', '')
         feedback_type = data.get('feedback_type', '')
