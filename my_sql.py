@@ -47,12 +47,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
 db.init_app(app)  # Initialize the db with the Flask app
 
- 
 # Initialize the database
 with app.app_context():
     db.create_all()
  
-
 def auth():
     auth_header = request.headers.get('Authorization')
     
