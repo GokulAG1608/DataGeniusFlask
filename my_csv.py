@@ -364,9 +364,6 @@ def upload_files():
         user_data = UserInfo.query.filter_by(Email=user_email).first()
         if not user_data:
             return jsonify({"status": "Failure","error": "User data not found."}), 404
-
-
-
         
         files = request.files.getlist('files')
         user_upload_folder = get_user_upload_folder()
