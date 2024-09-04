@@ -115,7 +115,6 @@ def cf_chat():
 @app.route('/suggestion', methods=['POST'])
 def cf_question():
     return suggestion()
-    
 
 #! PDF
 
@@ -142,7 +141,6 @@ def p_generate_questions():
 @app.route("/chat_history", methods=["GET"])
 def p_history():
     return get_chat_history()
-
 
 #! CSV 
 
