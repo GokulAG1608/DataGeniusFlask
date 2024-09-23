@@ -99,7 +99,6 @@ api_key = os.getenv("CONFLUENCE_API_KEY")
 api_key2 = os.getenv("OPENAI_API_KEY")
 space_key = os.getenv("CONFLUENCE_SPACE_KEY")
 
-
 # Text splitter configuration
 chunk_size = 600
 chunk_overlap = 100
