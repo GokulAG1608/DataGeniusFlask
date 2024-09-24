@@ -173,3 +173,42 @@ def p_history():
 @app.route('/load_files', methods=['POST'])
 def c_loadfiles():
     return load_files()
+    
+@app.route('/upload_files', methods=['POST'])
+def c_uploadfiiles():
+    return upload_files()
+
+@app.route('/question', methods=['POST'])
+def c_question():
+    return ask_questions()
+
+# @app.route('/feedback1', methods=['POST'])
+# def c_feedback():
+#     return feedback()
+
+@app.route('/smart_suggestion', methods=['POST'])
+def c_suggestion():
+    return smart_suggestion()
+
+@app.route('/temp_plots/<filename>')
+def c_plot():
+    return serve_plot()
+
+
+#! SQL 
+
+@app.route('/chat', methods=['POST'])
+def s_chat():
+    return chat()
+
+@app.route('/get_random_questions', methods=['POST'])
+def s_question():
+    return get_random_questions_route()
+
+
+@app.route("/")
+def demo():
+    return "hello world"
+
+if __name__ == '__main__':
+    app.run(debug=True,host='localhost',port=4000)
