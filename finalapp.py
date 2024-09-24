@@ -1,22 +1,25 @@
 from flask import Flask,jsonify,request,render_template
 from flask_cors import CORS
 
-#call the confluence file
+# call the confluence file
 from confluence import *
-#call the pdf file
+# call the pdf file
 from pdf1 import *
-#call the csv file
+# call the csv file
 from my_csv import *
-#call the sql file
+# call the sql file
 from my_sql import *
+
+from plot import *
 
 from feedback import *
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True)
+
 
 # Configuration for SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/user_credentials'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root123@localhost:3306/user_credentials'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
 
@@ -27,20 +30,29 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+# @app.route('/user/signin', methods=['POST'])
+# def user_signin():
+#     data = request.json
+#     return jsonify(*signin(data, app.config['SECRET_KEY']))
 @app.route('/user/signin', methods=['POST'])
 def user_signin():
     data = request.json
-    return jsonify(*signin(data, app.config['SECRET_KEY']))
+    response, status_code = signin(data, app.config['SECRET_KEY'])
+    return jsonify(response), status_code
 
 @app.route('/user/register', methods=['POST'])
 def user_register():
     data = request.json
-    return jsonify(*register(data))
+    response, status_code = register(data)
+    return jsonify(response), status_code
+
 
 @app.route('/user/forgot', methods=['POST'])
 def user_forgot_password():
     data = request.json
-    return jsonify(*forgot_password(data))
+    response, status_code = forgot_password(data)
+    return jsonify(response), status_code
+
 
 @app.route('/user/auth', methods=['GET'])
 def auth():
@@ -96,11 +108,39 @@ def auth():
         )
         return jsonify({"status": "Failure", "message": "Token is missing"}), 401
 
+@app.route('/dashboard', methods=['POST'])
+def get_emails():
+    try:
+        data = request.json  # JSON body is available in POST requests
+        emails = data.get('Email')  # Corrected variable name
+
+        # Fetch the user from the database using the provided email
+        user = UserInfo.query.filter_by(Email=emails).first()
+
+        if not user:
+            return jsonify({'status':'Error', 'message': 'User not found'}), 404
+
+        if user.RoleId == 1:
+            # If RoleId is 1, return all user emails
+            emails_list = [user.Email for user in UserInfo.query.all()]
+            return jsonify({'status': 'Success', 'message': 'Emails retrieved successfully', 'emails': emails_list})
+        else:
+            # Otherwise, return the current user's email
+            return jsonify({'status': 'Success', 'message': 'Email retrieved successfully', 'emails': user.Email})
+
+    except Exception as e:
+        return jsonify({'status': 'Error', 'message': f'An error occurred: {str(e)}'}), 500   
+@app.route('/plot', methods=['GET'])
+def plots():
+    return plot_route()
+
+
 #! FEEDBACK
 
 @app.route('/feedback', methods=['POST'])
 def feedback1():
     return feedback()
+
 
 #! CONFLUENCES
 
@@ -108,19 +148,12 @@ def feedback1():
 def cf_chat():
     return chat1()
 
-# @app.route('/feedback', methods=['POST'])
-# def cf_feedback():
-#     return feedback1()
-
 @app.route('/suggestion', methods=['POST'])
 def cf_question():
     return suggestion()
+    
 
 #! PDF
-
-@app.route("/upload", methods=["POST"])
-def p_uploads():
-    return upload()
 
 @app.route("/ask_question", methods=["POST"])
 def p_ask_questions():
@@ -130,62 +163,13 @@ def p_ask_questions():
 def p_generate_questions():
     return generate_top_questions_route()
 
-# @app.route("/dislike_feedback", methods=["POST"])
-# def p_feedback():
-#     return dislike_feedback()
-
-# @app.route("/like_feedback", methods=["POST"])
-# def p_feedback1():
-#     return submit_feedback()
-
 @app.route("/chat_history", methods=["GET"])
 def p_history():
     return get_chat_history()
+
 
 #! CSV 
 
 @app.route('/load_files', methods=['POST'])
 def c_loadfiles():
     return load_files()
-
-@app.route('/upload_files', methods=['POST'])
-def c_uploadfiiles():
-    return upload_files()
-
-@app.route('/question', methods=['POST'])
-def c_question():
-    return ask_questions()
-
-# @app.route('/feedback1', methods=['POST'])
-# def c_feedback():
-#     return feedback3()
-
-@app.route('/smart_suggestion', methods=['POST'])
-def c_suggestion():
-    return smart_suggestion()
-
-@app.route('/temp_plots/<filename>')
-def c_plot():
-    return serve_plot()
-
-
-#! SQL 
-
-@app.route('/chat', methods=['POST'])
-def s_chat():
-    return chat()
-
-@app.route('/get_random_questions', methods=['POST'])
-def s_question():
-    return get_random_questions_route()
-
-# @app.route("/dislike_feedback_sql", methods=["POST"])
-# def s_feedback():
-#     return dislike_feedback1()
-
-# @app.route("/like_feedback_sql", methods=["POST"])
-# def s_feedback1():
-#     return submit_feedback1()
-
-if __name__ == '__main__':
-    app.run(debug=True,host='0.0.0.0',port=3796)
