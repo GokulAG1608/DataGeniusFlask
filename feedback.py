@@ -5,10 +5,12 @@ from flask import Flask,request,jsonify
 from flask_cors import CORS
 from userdb import *
 
+
 app = Flask(__name__)
 CORS(app)
 
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
+
    
 def feedback():
     try:
@@ -34,12 +36,12 @@ def feedback():
         user_data = UserInfo.query.filter_by(Email=user_email).first()
         if not user_data:
             return jsonify({"status": "Failure","error": "User data not found."}), 404
-           
+
         data = request.get_json()
         query = data.get('question', '')
         feedback_type = data.get('feedback_type', '')
         chosen_option = data.get('option', '')  # Get the selected option from the request
-    
+     
         options = {
             "1": "The response was inaccurate.",
             "2": "The response was unclear.",
