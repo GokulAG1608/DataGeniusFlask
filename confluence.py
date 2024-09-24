@@ -6,7 +6,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.prompts import PromptTemplate
 from langchain_community.vectorstores import FAISS
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI,OpenAIEmbeddings
 from langchain.chains import RetrievalQA
 import google.generativeai as genai
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -20,8 +20,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+
 # Configuration for SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:1234@localhost:3306/user_credentials'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:root123@localhost:3306/user_credentials'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
 
@@ -99,6 +100,7 @@ api_key = os.getenv("CONFLUENCE_API_KEY")
 api_key2 = os.getenv("OPENAI_API_KEY")
 space_key = os.getenv("CONFLUENCE_SPACE_KEY")
 
+
 # Text splitter configuration
 chunk_size = 600
 chunk_overlap = 100
@@ -112,7 +114,7 @@ a = rec_splitter.create_documents([document])
 texts = [doc.page_content for doc in a]
 
 # Embeddings model
-embeddings_model = HuggingFaceEmbeddings()
+embeddings_model = OpenAIEmbeddings()
 
 # Vision model
 vision_model = genai.GenerativeModel('gemini-1.5-flash')
@@ -280,19 +282,7 @@ def handle_query(query):
     return response
 
 def generate_questions():
-    # Generate suggestions based on Confluence content
-    # loader = ConfluenceLoader(url=confluence_link, username=user_name, api_key=api_key)
-    # documents = loader.load(space_key=space_key, max_pages=6, limit=7)
-    # text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    # split_documents = text_splitter.split_documents(documents)
-    
-    # embeddings = OpenAIEmbeddings()
-    # vector_store = FAISS.from_documents(split_documents, embeddings)
-    
-    # retriever = vector_store.as_retriever(search_kwargs={"k": 1})
-    
-    # # Create a QA chain with OpenAI and FAISS retriever
-    # chain = RetrievalQA.from_chain_type(llm=model, chain_type="stuff", retriever=retriever)
+   
     ques = "Generate  5 questions from Confluence content"
     
     response = qa_chain.run({"query": ques})
