@@ -80,7 +80,7 @@ def feedback():
             prompt_Tokens = len(enc.encode(query))
             question_tokens = len(enc.encode(query))
             response_tokens = len(enc.encode(feedback_type))
-
+           
             total_tokens = prompt_Tokens + question_tokens + response_tokens
             total_Cost = (total_tokens / 1000) * COST_PER_1000_TOKENS
             
