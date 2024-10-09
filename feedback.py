@@ -88,7 +88,7 @@ def feedback():
             return jsonify({"status":"Success", "message":"Thank you for your feedback!"})
         else:
             log_activities(user_id=None,email=user_email, activity_type='error',app_name='app', error_message=str(e))  # Log error
-
+           
             return jsonify({"status":"Failure", "error":"Invalid feedback request."})
     except Exception as e:
         print(f"Error in chat route: {e}")
