@@ -53,7 +53,7 @@ def feedback():
                 return jsonify({"status":"Failure", "error":"Invalid option selected."}), 400
             
             feedback_message = options[chosen_option]
-
+           
             # Calculate tokens
             COST_PER_1000_TOKENS = 0.002 
 
