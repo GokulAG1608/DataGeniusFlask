@@ -19,6 +19,7 @@ def feedback():
         # Extract the token from the header
         token = auth_header.split(" ")[1]
           # Decode the JWT token
+       
         try:
             decoded_token = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
         except jwt.ExpiredSignatureError:
