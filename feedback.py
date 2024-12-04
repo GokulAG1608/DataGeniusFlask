@@ -40,7 +40,7 @@ def feedback():
         query = data.get('question', '')
         feedback_type = data.get('feedback_type', '')
         chosen_option = data.get('option', '')  # Get the selected option from the request
-     
+        
         options = {
             "1": "The response was inaccurate.",
             "2": "The response was unclear.",
