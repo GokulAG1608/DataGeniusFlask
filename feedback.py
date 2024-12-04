@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app)
 
 app.config['SECRET_KEY'] = 'tucEDtE44BbQLv7tXCivZkn1DbmKGsYn'
-   
+
 def feedback():
     try:
         auth_header = request.headers.get('Authorization')
