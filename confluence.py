@@ -50,7 +50,6 @@ def auth():
                 error_message=None,
                 app_name=None
             )
-            
             return jsonify({"status": "Success", "data": decoded}), 200
         
         except jwt.ExpiredSignatureError:
