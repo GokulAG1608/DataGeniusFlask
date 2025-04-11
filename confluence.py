@@ -72,7 +72,7 @@ def auth():
                 error_message="Invalid token"
             )
             return jsonify({"status": "Failure", "message": "Invalid token"}), 401
-    
+
     else:
         log_activities(
             user_id=None,
