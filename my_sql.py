@@ -36,7 +36,7 @@ from userdb import db, generate_token, log_activities, signin, register, forgot_
  
 # Load environment variables
 load_dotenv()
- 
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)
